@@ -1,0 +1,8 @@
+torch>=2.5.1+rocm6.2
+unsloth
+datasets
+trl
+peft
+bitsandbytes>=0.43.1
+sentencepiece
+protobuf

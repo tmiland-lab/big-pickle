@@ -1,0 +1,23 @@
+# ---------- personal / runtime state (never publish) ----------
+.env.local
+.env
+.rocm-env
+memory/
+data/conversations/
+data/sft-dataset.jsonl
+data/sft-curriculum.jsonl
+data/curriculum/
+data/lora-output/
+
+# ---------- python ----------
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

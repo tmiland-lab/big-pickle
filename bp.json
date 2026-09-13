@@ -1,0 +1,47 @@
+{
+  "brain": {
+    "base_url": "http://localhost:4143/v1",
+    "api_key": "",
+    "timeout": 300,
+    "max_tokens": 2048,
+    "context_window": 16384
+  },
+  "personas": {
+    "write": {
+      "model": "do/nemotron-3-ultra-550b",
+      "fallback": "auto/write",
+      "temperature": 0.7
+    },
+    "know": {
+      "model": "do/kimi-k3",
+      "fallback": "auto/smart",
+      "temperature": 0.3
+    },
+    "code": {
+      "model": "do/deepseek-v4-pro",
+      "fallback": "auto/code",
+      "temperature": 0.2
+    },
+    "chat": {
+      "model": "auto/big",
+      "fallback": "do/openai-gpt-oss-120b",
+      "temperature": 0.5
+    }
+  },
+  "memory_dir": "memory",
+  "capture_dir": "data/conversations",
+  "loops_max": 8,
+  "tool_round_limit": 6,
+  "tools": {
+    "shell": {"enabled": true, "timeout": 60},
+    "web": {"enabled": true, "timeout": 25},
+    "files": {"enabled": true}
+  },
+  "verify_models": true,
+  "train": {
+    "default_model": "unsloth/Qwen2.5-7B-Instruct",
+    "base_quant": "q4_k_m",
+    "headroom_gb": 5.0,
+    "desktop_safe": true
+  }
+}

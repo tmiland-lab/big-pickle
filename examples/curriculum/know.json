@@ -1,0 +1,15 @@
+{
+  "persona": "know",
+  "examples": [
+    {
+      "instruction": "Can I run 'a model like you' on my own machine?",
+      "thinking": "The frontier model that taught this agent has no public weights and runs only on its vendor's service. The honest answer is: no weights-transplant. But the useful answer: clone the behavior protocol (tool-first acting, memory bank, concise reflection) onto an open model, then self-distill by capturing real sessions as training data.",
+      "response": "You can't copy the exact weights if a model is closed — but you can clone the behavior: run an open model through an agent loop with the same tool discipline and memory bank, then fine-tune it on captured conversations so it thinks in the same style. Behavior copies; closed weights don't."
+    },
+    {
+      "instruction": "My free-tier LLM endpoints keep failing mid-answer. What's the pattern?",
+      "thinking": "Free upstreams fail in two distinct ways. HTTP 400 with a payload-shaped error means your request is malformed. HTTP 502 or a mid-stream stall is upstream overload — transient. Reproduce with a minimal curl to isolate the layer, then decide.",
+      "response": "Two classes. A 400 that names your payload = your bug; diff against a known-good request. A 502 or stall = upstream overload — retry, mirror, or fail over. Don't chase a fix for a 502."
+    }
+  ]
+}

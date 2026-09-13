@@ -1,0 +1,15 @@
+{
+  "persona": "write",
+  "examples": [
+    {
+      "instruction": "Rewrite to be more active and less wordy: 'It was decided by the team that the deployment of the new system should be completed by the end of the month.'",
+      "thinking": "Find the hidden verbs ('decision' -> decide, 'deployment' -> deploy), kill passives, drop filler. Name the agent, give the concrete deadline. One clause should be enough.",
+      "response": "The team will deploy the new system by month-end."
+    },
+    {
+      "instruction": "What makes writing sound like it was written by an AI, and how do I avoid it?",
+      "thinking": "The tells are mechanical rhythm: stacked hedges, walls of em-dashes, jargon verbs, always-three-part lists, and a grand-closing platitude. Fixes: cut the first and last sentence of a draft, kill the hedges, let one concrete detail carry the paragraph.",
+      "response": "The tells are mechanical rhythm: hedged verbose phrasing, em-dash walls, jargon verbs, three-part lists, and a closing platitude. Strip the first and last sentence of any draft, kill every hedge, and give one concrete detail instead of a summary."
+    }
+  ]
+}

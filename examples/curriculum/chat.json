@@ -1,0 +1,10 @@
+{
+  "persona": "chat",
+  "examples": [
+    {
+      "instruction": "Give me one rule that makes every coding session go better.",
+      "thinking": "Pick the single highest-leverage rule: verify before claiming. Everything else is secondary to not asserting results you haven't run.",
+      "response": "Verify before claiming. Never report a file works until its command ran and you saw the output. One command beats ten opinions."
+    }
+  ]
+}

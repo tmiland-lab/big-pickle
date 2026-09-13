@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
+
+# auto-load local secrets (never committed); fellbacks: existing env wins
+if [ -f .env.local ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env.local
+  set +a
+fi
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  write|know|code|chat)
+    exec python3 -m bp.cli "$cmd" "$@"
+    ;;
+  repl)
+    exec python3 -m bp.cli repl
+    ;;
+  build)
+    # conversation captures -> SFT dataset (+ teacher curriculum)
+    python3 -m replicate.curriculum
+    exec python3 -m replicate.dataset
+    ;;
+  curriculum)
+    exec python3 -m replicate.curriculum "$@"
+    ;;
+  dataset)
+    exec python3 -m replicate.dataset "$@"
+    ;;
+  train)
+    exec python3 replicate/train.py "$@"
+    ;;
+  dry)
+    exec python3 replicate/train.py --dry-run "$@"
+    ;;
+  env)
+    echo "BP_BASE_URL=$BP_BASE_URL"
+    echo "BP_API_KEY=${BP_API_KEY:0:8}..."  # never print the full token
+    ;;
+  help|*)
+    echo "Big Pickle — local agent clone. Usage:"
+    echo "  bp <write|know|code|chat> [prompt]      run a persona (no prompt -> REPL)"
+    echo "  bp repl [w|k|c|g]                       interactive REPL"
+    echo "  bp build                                curriculum + conversations -> SFT dataset"
+    echo "  bp curriculum [--no-thinking]           build teacher-curriculum dataset only"
+    echo "  bp dataset                              build dataset from captured sessions only"
+    echo "  bp dry                                  train dry-run: config + desktop-safe headroom check"
+    echo "  bp train [--model M] [--epochs N] ...   run QLoRA training (needs .venv from setup-training.sh)"
+    echo "  bp env                                  show brain endpoint (token masked)"
+    echo "  bp help                                 this help"
+    exit 0
+    ;;
+esac
