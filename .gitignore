@@ -8,6 +8,10 @@ data/sft-dataset.jsonl
 data/sft-curriculum.jsonl
 data/curriculum/
 data/lora-output/
+data/ocdb-sharegpt.jsonl
+data/.trained-stamp
+data/offline/
+unsloth_compiled_cache/
 
 # ---------- python ----------
 __pycache__/

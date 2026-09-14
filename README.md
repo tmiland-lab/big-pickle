@@ -61,6 +61,8 @@ tomorrow with a model that has been fine-tuned to *be* one.
 ./bin/bp write "draft a post about self-hosting"
 ./bin/bp know  "how much RAM does this machine have?"
 ./bin/bp chat                        # interactive REPL
+./bin/bp build                       # curriculum + captures → SFT dataset
+./bin/bp teach                       # teacher correction loop for specific lessons
 ```
 
 Personas (from `bp.json`): `code` · `write` · `know` · `chat`.
@@ -105,9 +107,16 @@ Ollama at `:11434`. Point it anywhere with `BP_BASE_URL` / `BP_API_KEY`
 | `bp/tools.py` | Shell, files, web, memory tools — OpenAI-format schemas, timeouts, output caps |
 | `bp/memory.py` | Memory bank (index + topic files) with a strict entry format — the long-term brain |
 | `bp/personas.py` | The four personas encoding the behavior protocol |
-| `bin/bp` | Unified runner: `write`/`know`/`code`/`chat`, `build`, `train`, `dry`, `env`, `help` |
-| `replicate/dataset.py` | Captured sessions → ShareGPT SFT JSONL |
-| `replicate/train.py` | QLoRA trainer (gfx1030-aware, desktop-safe, headroom guard) |
+| `bin/bp` | Unified runner: `write`/`know`/`code`/`chat`, `build`, `train`, `teach`, `dry`, `env`, `help` |
+| `replicate/dataset.py` | Captured sessions + curriculum + ocdb → ShareGPT SFT JSONL |
+| `replicate/train.py` | QLoRA trainer (dual AMD/NVIDIA backend, desktop-safe, delta-gated retrain) |
+| `replicate/ocdb_export.py` | opencode session DB → sharegpt behavior-clone data (Big Pickle sessions only) |
+| `replicate/corrective.py` | Tool-error → correction pair extractor (code-persona seeds) |
+| `replicate/memory_curriculum.py` | Memory bank lessons → know-persona seeds |
+| `replicate/repo_docs_curriculum.py` | AGENTS.md/README/bp.json → code-persona seeds |
+| `replicate/curriculum.py` | Merges all seed JSONs into `sft-curriculum.jsonl` |
+| `replicate/teach.py` | Teacher correction loop: child attempts → gold answer → revised child answer |
+| `replicate/cloud/bootstrap.sh` | DigitalOcean GPU droplet user-data (one-shot env setup) |
 
 ---
 
@@ -120,18 +129,38 @@ chat ─▶ captures ─▶ build ─▶ fine-tune ─▶ a local brain closer t
 ```
 
 1. **Chat** with the clone — sessions auto-capture to `data/conversations/`.
-2. **`./bin/bp build`** — merges teacher-curriculum seeds
-   (`examples/curriculum/*.json`, instruction + thinking trace + response)
-   with live captures into `data/sft-dataset.jsonl`.
-3. **`bash setup-training.sh`** — one-time ROCm venv (last gfx1030 build).
-4. **`./bin/bp train`** — LoRA adapter to `data/lora-output/`.
+2. **`./bin/bp build`** — merges five sources into `data/sft-dataset.jsonl`:
+   - `ocdb_export.py` → Big Pickle session transcripts (behavior clone)
+   - `corrective.py` → tool-error → correction pairs (code-persona seeds)
+   - `memory_curriculum.py` → memory bank lessons (know-persona seeds)
+   - `repo_docs_curriculum.py` → repo docs (code-persona seeds)
+   - `curriculum.py` → all seed JSONs + teach captures
+   - Plus captured conversation transcripts
+3. **`./bin/bp teach`** (optional) — teacher correction loop for specific lessons.
+4. **`./bin/bp train`** — deploy-to-snapshot → QLoRA on cloud GPU → fetch adapter → destroy.
+   Delta-gated: skips automatically if dataset unchanged since last train
+   (override: `--force`).
 5. **Point a persona at the merged model** — the local brain gets closer to
    Big Pickle with every run.
 
+### Data pipeline (detail)
+
+The build pipeline is ordered and idempotent:
+
+```
+ocdb_export → corrective → memory_curriculum → repo_docs_curriculum
+  → curriculum (seeds → sft-curriculum.jsonl)
+  → dataset (merges everything → sft-dataset.jsonl)
+```
+
+`data/.trained-stamp` records the dataset SHA-256 at last successful train;
+next `bp train` compares and skips if unchanged.
+
 ---
 
-## 🛠 Training notes (RX 6900 XT / gfx1030)
+## 🛠 Training
 
+**Local** (RX 6900 XT / gfx1030):
 - ROCm ≥ 6.3 dropped gfx1030; the setup pins `torch 2.5.1+rocm6.2` and a
   `HSA_OVERRIDE_GFX_VERSION=10.3.0` fallback.
 - Default 7B QLoRA (4-bit) ≈ **6 GB VRAM** — leaves headroom for the desktop.
@@ -141,6 +170,15 @@ chat ─▶ captures ─▶ build ─▶ fine-tune ─▶ a local brain closer t
   checkpointing, and a pre-flight VRAM/RAM guard that refuses to start
   otherwise. Tune the reserve with `--headroom-gb` (default 5).
 - Always dry-run first: `./bin/bp dry`.
+
+**Cloud** (recommended for heavy runs):
+- `bp train` deploys a DigitalOcean H100 GPU droplet from a pre-baked
+  snapshot (CUDA/torch/unsloth/Qwen2.5-7B pre-installed), runs training,
+  fetches the adapter, and destroys the droplet. ~$0.75 per cycle.
+- Adapters are fetched via `rsync --partial` (not plain scp — can silently
+  produce full-size-but-corrupt files on DO).
+- Retrain cadence is threshold-gated: triggers when +50 curriculum/teach
+  items or +200 conversation lines accumulate since last train.
 
 ---
 

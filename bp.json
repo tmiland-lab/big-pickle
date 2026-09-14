@@ -30,6 +30,7 @@
   },
   "memory_dir": "memory",
   "capture_dir": "data/conversations",
+  "curriculum_dir": "data/curriculum",
   "loops_max": 8,
   "tool_round_limit": 6,
   "tools": {

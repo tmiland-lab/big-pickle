@@ -72,10 +72,15 @@ def filter_min_turns(dataset: list[dict], min_pairs: int = 1) -> list[dict]:
     return [d for d in dataset if len(d.get("conversations", [])) >= min_pairs]
 
 
-def build_dataset(transcripts_path: str, output_path: str, min_pairs: int = 1, dedup: bool = True, extra_path: str = "") -> int:
+def build_dataset(transcripts_path: str, output_path: str, min_pairs: int = 1, dedup: bool = True,
+                  extra_paths: list[str] | None = None) -> int:
     transcripts = load_conversations(transcripts_path)
     dataset = to_sharegpt(transcripts)
-    if extra_path and os.path.exists(extra_path):
+    for extra_path in (extra_paths or []):
+        if not os.path.exists(extra_path):
+            print(f"[dataset] skip missing extra: {extra_path}", file=sys.stderr)
+            continue
+        n_added = 0
         with open(extra_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
@@ -87,7 +92,8 @@ def build_dataset(transcripts_path: str, output_path: str, min_pairs: int = 1, d
                     continue
                 if isinstance(item.get("conversations"), list):
                     dataset.append(item)
-        print(f"[dataset] + {sum(1 for _ in open(extra_path, encoding='utf-8') if _.strip())} teacher examples from {extra_path}")
+                    n_added += 1
+        print(f"[dataset] + {n_added} teacher examples from {extra_path}")
     before = len(dataset)
     dataset = filter_min_turns(dataset, min_pairs)
     if dedup:
@@ -104,7 +110,8 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--input", default=None, help="Transcript directory (default: data/conversations)")
     p.add_argument("--output", default=None, help="Output JSONL path (default: data/sft-dataset.jsonl)")
-    p.add_argument("--curriculum", default=None, help="Teacher curriculum JSONL to merge (default: data/sft-curriculum.jsonl)")
+    p.add_argument("--curriculum", action="append", default=None, help="Curriculum/sharegpt JSONL to merge (repeatable; default: data/sft-curriculum.jsonl)")
+    p.add_argument("--ocdb", default=None, help="opencode DB export JSONL to merge (default: data/ocdb-sharegpt.jsonl)")
     p.add_argument("--min-pairs", type=int, default=1)
     args = p.parse_args()
 
@@ -112,6 +119,12 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(script_dir)
     inp = args.input or os.path.join(project_dir, "data", "conversations")
     out = args.output or os.path.join(project_dir, "data", "sft-dataset.jsonl")
-    extra = args.curriculum if args.curriculum is not None else os.path.join(project_dir, "data", "sft-curriculum.jsonl")
-    n = build_dataset(inp, out, args.min_pairs, extra_path=extra)
+    extra_paths = list(args.curriculum) if args.curriculum else []
+    if not extra_paths:
+        extra_paths.append(os.path.join(project_dir, "data", "sft-curriculum.jsonl"))
+    if args.ocdb is not None:
+        extra_paths.append(args.ocdb)
+    elif os.path.exists(os.path.join(project_dir, "data", "ocdb-sharegpt.jsonl")):
+        extra_paths.append(os.path.join(project_dir, "data", "ocdb-sharegpt.jsonl"))
+    n = build_dataset(inp, out, args.min_pairs, extra_paths=extra_paths)
     print(f"[dataset] wrote {n} examples to {out}")

@@ -31,6 +31,9 @@ LoRA fine-tuning. Author: big-pickle. Director: the boss.
 - `data/`, `memory/`, `.env.local`, `*.pyc` are gitignored — never `git add -f`.
 - `examples/curriculum/*.json` are the sanitized public copy of seeds;
   personal seeds live in `data/curriculum/` (gitignored).
+- Before committing: always run `git status --porcelain --ignored` and verify no
+  new runtime/personal/data files are about to be staged. If a new generated
+  file appears, add a gitignore rule FIRST, commit that, then commit the rest.
 - Verify before commit: `git status --porcelain --ignored`.
 
 ## Hardware note (train.py)

@@ -23,12 +23,28 @@ case "$cmd" in
     exec python3 -m bp.cli repl
     ;;
   build)
-    # conversation captures -> SFT dataset (+ teacher curriculum)
+    # all sources -> SFT dataset:
+    #   opencode.db behavior clone -> ocdb-sharegpt.jsonl
+    #   tool-error corrections    -> data/curriculum/corrective.json
+    #   memory bank lessons        -> data/curriculum/memory-know.json
+    #   repo docs (AGENTS/README)  -> data/curriculum/repo-docs.json
+    #   taught/seed curriculum     -> data/sft-curriculum.jsonl
+    #   bp conversation captures   -> merged in dataset.py
+    python3 replicate/ocdb_export.py
+    python3 replicate/corrective.py
+    python3 replicate/memory_curriculum.py
+    python3 replicate/repo_docs_curriculum.py
     python3 -m replicate.curriculum
     exec python3 -m replicate.dataset
     ;;
   curriculum)
     exec python3 -m replicate.curriculum "$@"
+    ;;
+  distill)
+    exec python3 replicate/distill.py "$@"
+    ;;
+  teach)
+    exec python3 replicate/teach.py "$@"
     ;;
   dataset)
     exec python3 -m replicate.dataset "$@"
@@ -49,6 +65,8 @@ case "$cmd" in
     echo "  bp repl [w|k|c|g]                       interactive REPL"
     echo "  bp build                                curriculum + conversations -> SFT dataset"
     echo "  bp curriculum [--no-thinking]           build teacher-curriculum dataset only"
+    echo "  bp distill --topics <t> [--personas c]  bulk-generate curriculum seeds via the brain"
+    echo "  bp teach [prompts...]                ask child lesson -> correct with gold -> re-answer"
     echo "  bp dataset                              build dataset from captured sessions only"
     echo "  bp dry                                  train dry-run: config + desktop-safe headroom check"
     echo "  bp train [--model M] [--epochs N] ...   run QLoRA training (needs .venv from setup-training.sh)"
