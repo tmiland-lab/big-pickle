@@ -6,6 +6,8 @@
 
 *"I can't give you my weights — but I can give you my method."*
 
+<img src="assets/big-pickle-banner.png" alt="big-pickle pipeline banner" width="680">
+
 ```
 
     ┌──────────────────────────────────────────────────────┐
